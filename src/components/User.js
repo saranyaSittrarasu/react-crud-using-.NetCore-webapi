@@ -5,43 +5,95 @@ import Button from "react-bootstrap/Button";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const User = () => {
-  const userData = [
-    { id: 1, name: "mark", age: 23, isActive: 0 },
-    { id: 2, name: "mark2", age: 32, isActive: 1 },
-    { id: 3, name: "mark3", age: 33, isActive: 1 },
-  ];
   const [data, setData] = useState([]);
   const [show, setShow] = useState(false);
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [isActive, setIsActive] = useState(false);
+  const [editAge, setEditAge] = useState("");
+  const [editName, setEditName] = useState("");
+  const [editIsActive, setEditIsActive] = useState(false);
+  const [editId, setEditId] = useState("");
   const handleClose = () => setShow(false);
   const handleEdit = (id) => {
     setShow(true);
     const userEditData = data.find((user) => user.id === id);
     if (userEditData) {
-      setAge(userEditData.age);
-      setName(userEditData.name);
-      setIsActive(userEditData.isActive);
+      setEditAge(userEditData.age);
+      setEditName(userEditData.name);
+      setEditIsActive(userEditData.isActive);
+      setEditId(id);
     }
   };
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete?") === true) {
+      await axios
+        .delete(`https://localhost:7265/api/User/${id}`)
+        .then((res) => {
+          toast.success("User deleted successfully");
+        });
       setData(data.filter((user) => user.id !== id));
     }
   };
-  const handleUpdate = () => {};
-  const handleSubmit = () => {
-    console.log(name, age, isActive);
+  const handleUpdate = async () => {
+    await axios
+      .put(`https://localhost:7265/api/User/${editId}`, {
+        id: editId,
+        name: editName,
+        age: editAge,
+        isActive: editIsActive,
+      })
+      .then((res) => {
+        toast.success("User updated successfully");
+        setShow(false);
+        getData();
+      })
+      .catch((err) => {
+        toast.error(err);
+      });
+  };
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const postData = {
+      name: name,
+      age: age,
+      isActive: isActive,
+    };
+    await axios
+      .post("https://localhost:7265/api/User", postData)
+      .then((res) => {
+        setData([...data, res.data]);
+        setName("");
+        setAge("");
+        setIsActive(false);
+        toast.success("User added successfully");
+      })
+      .catch((err) => {
+        toast.error(err);
+      });
   };
 
+  const getData = async () => {
+    await axios
+      .get("https://localhost:7265/api/User")
+      .then((res) => {
+        setData(res.data);
+      })
+      .catch((err) => {
+        toast.error(err);
+      });
+  };
   useEffect(() => {
-    setData(userData);
+    getData();
   }, []);
   return (
     <>
+      <ToastContainer />
       <Container fluid="md">
         <Row>
           <Col>
@@ -70,7 +122,10 @@ const User = () => {
             <label>isActive</label>
           </Col>
           <Col>
-            <button className="btn btn-primary" onClick={() => handleSubmit()}>
+            <button
+              className="btn btn-primary"
+              onClick={(e) => handleSubmit(e)}
+            >
               Submit
             </button>
           </Col>
@@ -94,7 +149,7 @@ const User = () => {
                   <td>{index + 1}</td>
                   <td>{user.name}</td>
                   <td>{user.age}</td>
-                  <td>{user.isActive}</td>
+                  <td>{user.isActive === true ? "Yes" : "No"}</td>
                   <td colSpan={2}>
                     <button
                       className="btn btn-primary me-2"
@@ -130,24 +185,24 @@ const User = () => {
                 <input
                   type="text"
                   placeholder="Enter name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
                 />
               </Col>
               <Col>
                 <input
                   type="text"
                   placeholder="Enter age"
-                  value={age}
-                  onChange={(e) => setAge(e.target.value)}
+                  value={editAge}
+                  onChange={(e) => setEditAge(e.target.value)}
                 />
               </Col>
               <Col>
                 <input
                   type="checkbox"
                   name="isActive"
-                  checked={isActive}
-                  onChange={(e) => setIsActive(e.target.checked)}
+                  checked={editIsActive}
+                  onChange={(e) => setEditIsActive(e.target.checked)}
                 />
                 <label>isActive</label>
               </Col>
